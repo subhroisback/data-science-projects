@@ -1,2 +1,2 @@
-# R_Projects
-This Repository contains projects worked in R language
+# Data Science Projects in R
+This Repository contains my data science projects coded in R language. 
