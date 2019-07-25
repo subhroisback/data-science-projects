@@ -10,7 +10,7 @@ Skills and Tools: **R, ggplot2, Data Analysis**
 Description: Consumer perceptions towards a brand can be built on various parameters depending upon the product. This project uses factor analysis to evaluate and identify the most significant attributes that contribute towards the consumer perception of the different cereal brands.</br>
 Skills and Tools: **R, Factor Analysis, Advanced Statistics, Analytics**
 
-## Project 3 : [Built a classification model to cluster Engineering Colleges into different groups]()
+## Project 3 : [Built a classification model to cluster Engineering Colleges into different groups](http://htmlpreview.github.io/?https://github.com/subhroisback/data-science-projects/blob/master/Clustering.nb.html)
 Description: K-Means Clustering algorithm was applied to the Aggregated Survey Data from 26 Engineering colleges. A classification model was built to classify Engineering colleges into different groups based upon multiple relevant parameters. </br>
 Skills and Tools: **R, Cluster Analysis, Data Mining, K Means Clustering**
 
