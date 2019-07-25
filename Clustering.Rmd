@@ -1,0 +1,192 @@
+---
+title: "Built a classification model to cluster Engineering Colleges into different groups"
+output: html_notebook
+---
+
+## Problem Statement
+Engg College Data file is provided. We need to do Clustering of the Engg Colleges on Hierarchical Clustering and K-Mean Clustering. 
+
+* Clustering using Hierarchical with Average Linkage.
+* Clustering using K Means
+We need to Check the output of above two. 
+If the output differs then what linkage can we use in Hierarchical so that the two output are almost matching.
+
+## Solution
+
+### Hierarchical Clustering with Average Linkage
+
+### Importing the data file
+
+```{r}
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+#getwd()
+data = read.csv("Engg_College_Data.csv", header = TRUE)
+head(data)
+```
+
+### Gathering some basic useful information about the dataset like its dimensions, data types and distribution, number of NAs etc.
+
+```{r}
+str(data)
+summary(data)
+any(is.na(data))
+
+```
+
+### Scaling the dataset 
+
+```{r}
+data.scale = scale(data[,-c(1,2)])
+
+```
+
+### Building the distance matrix
+Since all the values here are continuous numerical values, you will use the euclidean distance method.
+
+```{r}
+data.dist.eucl = dist(x=data, method = "euclidean")
+#print(data.dist.eucl, digits = 4)
+
+```
+
+### Applying Hierarchical Clustering
+
+Applying hclust() function with "Average" linkage method and building the dendogram with 4 clusters
+
+```{r}
+data.hclus = hclust(d=data.dist.eucl, method = "average")
+plot(x=data.hclus, labels = as.character(data[,2]))
+rect.hclust(data.hclus, k=4, border = "blue")
+```
+
+### Profiling the clusters
+
+```{r}
+data$Cluster = cutree(data.hclus, k = 4)
+
+aggr = aggregate(data[,-c(1,2,8)],list(data$Cluster),mean)
+
+data.clus.profile = data.frame(Cluster = aggr[,1],
+                               Freq = as.vector(table(data$Cluster)),
+                               aggr[,-c(1)])
+head(data.clus.profile)
+
+```
+
+### K Means Clustering
+
+Applying K Means clustering on the same dataset used for hierarchical clusting.
+
+### Loading the dataset
+
+```{r}
+K_data = read.csv("D:/downloads/Engg_College_Data.csv", header = TRUE)
+```
+
+### Scaling the data and plotting the within groups sum of squares
+```{r}
+K_data_scale = scale(K_data[,3:7])
+
+wssplot = function(data, nc = 15 , seed = 1234){
+  wss = (nrow(data)-1) * sum (apply(data, 2, var))
+  for(i in 2:nc){
+    set.seed(seed)
+    wss[i] = sum(kmeans(data, centers = i)$withinss)
+  }
+  plot(1:nc, wss, type = "b", xlab = "Number of Clusters", ylab = "Within groups sum of squares")
+}
+
+wssplot(K_data_scale, nc = 4)
+```
+
+### Using NbClust library to find the number of clusters
+
+```{r}
+library(NbClust)
+set.seed(1234)
+nc = NbClust(data = K_data[,3:7], min.nc = 2, max.nc = 5, method = "kmeans")
+```
+
+### Applying K Means
+Applying K means with centers = 2, as - According to the majority rule, the best number of clusters is  2 
+
+```{r}
+k_means_clus = kmeans(x= K_data_scale , centers = 2, nstart = 25)
+k_means_clus
+```
+
+### Plotting the clusters
+
+```{r}
+library(cluster)
+clusplot(K_data_scale, k_means_clus$cluster, color = TRUE, shade = TRUE, labels = 2, lines = 1)
+```
+
+### Profiling the dataset
+
+```{r}
+
+K_data$Cluster = k_means_clus$cluster
+
+aggr = aggregate(K_data[,-c(1,2,8)],list(K_data$Cluster),mean)
+K_data_clus_profile = data.frame(Cluster = aggr[,1],
+                                 Freq = as.vector(table(K_data$Cluster)),
+                                 aggr[,-c(1)])
+head(K_data_clus_profile)
+```
+
+### Applying K Means with centre = 4
+Though after applying nbclust, the majority rule suggests cluster = 2, we found the clusters formed are not so much significant. Therefore, we will take the next majority, i.e. Cluster = 4 and apply K Means 
+
+```{r}
+k_means_clus_4 = kmeans(x= K_data_scale , centers = 4, nstart = 25)
+k_means_clus_4
+```
+
+Again plotting the clusters 
+```{r}
+clusplot(K_data_scale, k_means_clus_4$cluster, color = TRUE, shade = TRUE, labels = 2, lines = 1)
+```
+
+Then profiling the dataset with the updated findings 
+```{r}
+
+K_data$Cluster = k_means_clus_4$cluster
+
+aggr = aggregate(K_data[,-c(1,2,8)],list(K_data$Cluster),mean)
+K_data_clus_profile = data.frame(Cluster = aggr[,1],
+                                 Freq = as.vector(table(K_data$Cluster)),
+                                 aggr[,-c(1)])
+head(K_data_clus_profile)
+```
+
+### Question : If the output differs then what linkage should have been used in Hierarchical so that the two output are almost matching.
+
+To answer this, we have to re-run and check the Hierarchical clustering using different linkage method. 
+
+### Trying with Linkage = Complete
+
+```{r}
+data = read.csv("D:/downloads/Engg_College_Data.csv", header = TRUE)
+data.scale = scale(data[,-c(1,2)])
+
+data.dist.eucl = dist(x=data.scale, method = "euclidean")
+
+data.hclus = hclust(d=data.dist.eucl, method = "complete")
+plot(x=data.hclus, labels = as.character(data[,2]))
+rect.hclust(data.hclus, k=4, border = "red")
+
+
+data$Cluster = cutree(data.hclus, k = 4)
+
+aggr = aggregate(data[,-c(1,2,8)],list(data$Cluster),mean)
+data.clus.profile = data.frame(Cluster = aggr[,1],
+                               Freq = as.vector(table(data$Cluster)),
+                               aggr[,-c(1)])
+head(data.clus.profile)
+
+```
+
+### Conclusion 
+
+In order to match the output of K Means Clustering (with cluster = 4) to Hierarchical Clustering (with cluster = 4), we have to use the linkage algorithm as "complete" for this dataset.  
