@@ -1,0 +1,629 @@
+---
+title: "Neural Network model on Employee Attrition"
+output: html_notebook
+---
+
+## Problem Statement 
+With the given HR Employee Attrition Data file collected by the HR department, 
+Build Neural Network and CART model.
+
+## Solution 
+
+### Importing the data set 
+Importing the data set given. The Target variable is the Attrition column 
+
+```{r}
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+empalldata<- read.table("HR_Employee_Attrition_Data.csv", sep = ",", header = T)
+head(empalldata,n = 2 )
+
+```
+We see that all the values for these columns are same -
+EmployeeCount, EmployeeNumber, Over18, StandardHours
+So we can drop these columns before building our model. 
+
+Updated data set - 
+```{r}
+empdata= empalldata[,-c(9,10,22,27)]
+head(empdata, n = 2)
+```
+
+### Performing Exploratory Data Analysis 
+
+### Checking the structure and summary of the data set 
+```{r}
+str(empdata)
+
+summary(empdata)
+```
+We observe that there are 2940 observation and 31 columns
+
+### Checking out the Attrition % of the entire dataset
+
+For the sake of proper calculation, we are updating the attrition value : 
+attrition = yes to 1 and attrition = no to 0
+```{r}
+table (empdata$Attrition)
+attach(empdata)
+sum(ifelse(empdata$Attrition=='Yes',1,0)) / nrow(empdata)
+```
+
+16% of records have attrition value "Yes" while 84% of records has attrition value "No". In other words, 474 out of 2940 records have attrition "Yes" and 2466 have attrition "No". This also shows that data is not balanced. 
+
+### Plotting to analyse Attrition with other categorical variables.
+
+Building Contingency tables and plotting them in order to analyse the effect of Attrition with other categorical variables.
+
+### Performance Rating
+```{r}
+library(lattice)
+tab.perrating<- xtabs(~PerformanceRating+Attrition,data=empdata)
+round(prop.table(tab.perrating,1)*100,2)
+histogram(~Attrition|factor(PerformanceRating), empdata)
+```
+We see that Performance rating of 3 & 4 have same attrition rates, so performance rating doesn't have an effect on Attrition.
+
+### Overtime
+```{r}
+prop.table(table(OverTime))
+
+tab.ot<- xtabs(~OverTime+Attrition,data=empdata)
+round(prop.table(tab.ot)*100,2)
+histogram(~Attrition|factor(OverTime), empdata)
+```
+
+We find that 28% employess do a overtime and 31% of employees doing an overtime have resigned versus 11% who don't do overtime.
+
+### Worklife balance
+```{r}
+prop.table(table(WorkLifeBalance))
+
+tab.wlbal<- xtabs(~WorkLifeBalance+Attrition,data=empdata)
+round(prop.table(tab.wlbal,1)*100,2)
+histogram(~Attrition|factor(WorkLifeBalance), empdata)
+```
+We see that 31% of employees, who have rated Worklife balance as very low have resigned.   
+
+### Jobrole
+```{r}
+tab.role<- xtabs(~JobRole+Attrition,data=empdata) 
+round(prop.table(tab.role,1)*100,2)
+histogram(~Attrition|factor(JobRole), empdata)
+```
+We find that Job Roles of  - Sales rep (40%), HR (24%) & Lab Technician(23%) 
+have high attrition rates in comparison to others.  
+
+###  Department
+```{r}
+tab.role<- xtabs(~Department+Attrition,data=empdata) 
+round(prop.table(tab.role,1)*100,2)
+histogram(~Attrition|factor(Department), empdata)
+```
+We see HR & Sales Dept have high attrition rates.
+
+###  Maritial status
+```{r}
+tab.marstat<- xtabs(~MaritalStatus+Attrition,data=empdata) 
+round(prop.table(tab.marstat,1)*100,2)
+histogram(~Attrition|factor(MaritalStatus), empdata)
+```
+
+We observe Single employees have higher attrition
+
+###  Gender
+```{r}
+tab.gender<- xtabs(~Gender+Attrition,data=empdata) 
+round(prop.table(tab.gender,1)*100,2)
+histogram(~Attrition|factor(Gender), empdata)
+```
+We find males have marginally higer attrition than females
+
+###  Environment Satisfaction
+```{r}
+tab.env<- xtabs(~EnvironmentSatisfaction+Attrition,data=empdata) 
+round(prop.table(tab.env)*100,2)
+histogram(~Attrition|factor(EnvironmentSatisfaction), empdata)
+```
+We see that Employees who have rated very low for environment satisfaction have higher attrition rate (30%). So Employee statisfaction has a impact on attrition
+
+###  Business Travel
+```{r}
+tab.travel<- xtabs(~BusinessTravel+Attrition,data=empdata) 
+round(prop.table(tab.travel,1)*100,2)
+histogram(~Attrition|factor(BusinessTravel), empdata)
+```
+Frequent travels has higher attrition rate.
+
+###  Education Field
+```{r}
+tab.edufield<- xtabs(~EducationField+Attrition,data=empdata) 
+round(prop.table(tab.edufield,1)*100,2)
+histogram(~Attrition|factor(EducationField), empdata)
+```
+We observe Human resource, Marketing & technical Degree have higer attrition
+
+###  Education
+```{r}
+tab.edu<- xtabs(~Education+Attrition,data=empdata) 
+round(prop.table(tab.edu,1)*100,2)
+histogram(~Attrition|factor(Education), empdata)
+```
+Below college, college & Bachelors degrees have higher attrition
+
+###  Impact of Age
+
+Age Variability
+```{r}
+summary(empdata$Age)
+```
+
+```{r}
+boxplot(Age~Attrition, horizontal= TRUE, col=c("Red","Blue"), main ="Attrition")
+hist(Age,xlab="age",ylab="count",breaks=20,main="Age variability in the company",col="blue",freq=FALSE)
+```
+
+We find that minimum age is 18 while maximum age is 60. Average age is 36 years. 
+Most employees are in the age group of 30-40. Younger employees less that 35 years have more attrition than slightly older ones
+
+###  Distance from Home
+```{r}
+summary(empdata$DistanceFromHome)
+boxplot(DistanceFromHome~Attrition, horizontal= TRUE, col=c("Red","Blue"), main ="DistanceFromHome")
+```
+Attrition is more for people travelling more than 12 kms from home.
+
+###  Monthly Income
+```{r}
+summary(empdata$MonthlyIncome)
+boxplot(MonthlyIncome~Attrition, horizontal= TRUE, col=c("Red","Blue"), main ="MonthlyIncome")
+```
+We see that less monthly incomes have more attrition.
+
+###  Salary & Salary hike
+```{r}
+summary(empdata$PercentSalaryHike)
+
+boxplot(PercentSalaryHike~Attrition, horizontal= TRUE, col=c("Red","Blue"), main ="PercentSalaryHike")
+```
+The average monthly income of an employess is around 5000 & the percent salary hike is less than 14%. Employees with salary less than 6000 have higher attrition
+We find Salary hike doesnt have an effect on attrition
+
+### Writing Hypothesis
+
+H0: Attrition (dependent variable) is not affected by other independent variables.
+
+H1: Attrition (dependent variable) is affected by other independent variables.
+
+```{r}
+dataset<-empalldata[c(2,1,4,6,7,9,10,11,13,14,15,17,19,20,21,24:35,3,5,8,12,16,18,23,22)]
+dataset$Attrition <- ifelse(dataset$Attrition =="No",0,1)
+regressor<-lm(formula=dataset$Attrition~.,
+              data=dataset[,2:27])
+summary(regressor)
+```
+
+The F - statistic is significant and hence we reject Null Hypothesis and accept 
+Alternate hypothesis, i.e Dependent Variable - Attrition is affected by the given independent variables. 
+
+### Next Step - Building the CART Model 
+Before we build the CART model, we are dividing the dataset in two parts in 70:30 ratio - Training and Holdout. 
+We build the model on the Training dataset and use this model to do the prediction on the Holdout data set. 
+
+```{r}
+set.seed(55)
+
+EMP.ATT <- read.csv("HR_Employee_Attrition_Data.csv", header=T)
+EMP.ATT <- EMP.ATT[,c(-9,-10,-22,-27)]
+EMP.ATT$Attrition<-ifelse(EMP.ATT$Attrition=='Yes', 1,0)
+EMP.ATT$random <-runif(nrow (EMP.ATT), 0, 1);
+EMP.ATT.dev<- EMP.ATT[which(EMP.ATT$random <= 0.7),]
+EMP.ATT.holdout<-EMP.ATT [which(EMP.ATT$random > 0.7),]
+c(nrow(EMP.ATT.dev), nrow(EMP.ATT.holdout))
+EMP.ATT.dev = EMP.ATT.dev[-32]
+EMP.ATT.holdout = EMP.ATT.holdout[-32]
+
+```
+
+###  CART Model 
+We now built the classification CART model
+We have taken the following control parameters - 
+minsplit=80 :- The minimum number of observations that must exist in a node in order for a split to be attempted. 
+
+minbucket = 10 :- the minimum number of observations in any terminal node 
+
+xval = 10 :- number of Cross -  Validations and to avoid over-fitting.
+
+```{r}
+library(rpart)
+library(rpart.plot)
+table(EMP.ATT.dev$Attrition)
+```
+
+```{r}
+r.ctrl = rpart.control(minsplit=80, minbucket = 10, cp = 0, xval = 10)
+Model.CRT <- rpart(formula = Attrition ~ ., 
+            data = EMP.ATT.dev, method = "class", 
+            control = r.ctrl)
+Model.CRT
+```
+
+Now plotting the Classification Tree created 
+
+```{r}
+library(rattle)
+library(RColorBrewer)
+fancyRpartPlot(Model.CRT)
+```
+
+Now we find how the tree performs 
+
+```{r}
+printcp(Model.CRT)
+plotcp(Model.CRT)
+```
+
+Once we get the value of cost complexity parameter (cp), we feed the value of cp in the model to prune it. Because, initially the model was created with a cp value of 0, which meant the Tree was allowed to grow without a stopping parameter. This led the model to be over-fitting. 
+The cp value checks for any split that does not decrease the overall lack of fit by a factor of cp is not attempted.
+
+So now we prune the tree with by adding the cp value = 0.007114
+
+```{r}
+ptree<- prune(Model.CRT, cp= 0.018293 ,"CP")
+printcp(ptree)
+fancyRpartPlot(ptree, uniform=TRUE,  main="Pruned Classification Tree")
+```
+
+Now, we will check how the model performed by taking various model evaluation measures. 
+
+Using Scores
+```{r}
+EMP.ATT.dev$predict.class <- predict(ptree, EMP.ATT.dev, type="class")
+EMP.ATT.dev$predict.score <- predict(ptree, EMP.ATT.dev, type="prob")
+class(EMP.ATT.dev$predict.score)
+
+```
+
+Using Deciling 
+```{r}
+decile <- function(x){
+  deciles <- vector(length=10)
+  for (i in seq(0.1,1,.1)){
+    deciles[i*10] <- quantile(x, i, na.rm=T)
+  }
+  return (
+    ifelse(x<deciles[1], 1,
+           ifelse(x<deciles[2], 2,
+                  ifelse(x<deciles[3], 3,
+                         ifelse(x<deciles[4], 4,
+                                ifelse(x<deciles[5], 5,
+                                       ifelse(x<deciles[6], 6,
+                                              ifelse(x<deciles[7], 7,
+                                                     ifelse(x<deciles[8], 8,
+                                                            ifelse(x<deciles[9], 9, 10
+                                                            ))))))))))
+}
+
+EMP.ATT.dev$deciles <- decile(EMP.ATT.dev$predict.score[,2])
+
+```
+
+Using Ranking order
+
+```{r}
+library(data.table)
+library(scales)
+tmp_DT = data.table(EMP.ATT.dev)
+rank <- tmp_DT[, list(
+  cnt = length(Attrition), 
+  cnt_resp = sum(Attrition), 
+  cnt_non_resp = sum(Attrition == 0)) , 
+  by=deciles][order(deciles)]
+rank$rrate <- round(rank$cnt_resp / rank$cnt,4);
+rank$cum_resp <- cumsum(rank$cnt_resp)
+rank$cum_non_resp <- cumsum(rank$cnt_non_resp)
+rank$cum_rel_resp <- round(rank$cum_resp / sum(rank$cnt_resp),4);
+rank$cum_rel_non_resp <- round(rank$cum_non_resp / sum(rank$cnt_non_resp),4);
+rank$ks <- abs(rank$cum_rel_resp - rank$cum_rel_non_resp) * 100;
+rank$rrate <- percent(rank$rrate)
+rank$cum_rel_resp <- percent(rank$cum_rel_resp)
+rank$cum_rel_non_resp <- percent(rank$cum_rel_non_resp)
+
+head(rank)
+```
+
+Using ML Metrics, to see the AUC, KS_Stat, Gini Scores and building the Confusion Matrix 
+
+```{r}
+library(MLmetrics)
+MLmetrics::AUC(EMP.ATT.dev$predict.score[,2], EMP.ATT.dev$Attrition)
+MLmetrics::KS_Stat(EMP.ATT.dev$predict.score[,2], EMP.ATT.dev$Attrition)
+MLmetrics::Gini(EMP.ATT.dev$predict.score[,2], EMP.ATT.dev$Attrition)
+ConfusionMatrix(EMP.ATT.dev$predict.class, EMP.ATT.dev$Attrition)
+```
+
+
+Our model was been developed using the Training dataset. Now, let us test this model on the Holdout dataset and review the performance. 
+
+Scoring the holdout dataset
+```{r}
+EMP.ATT.holdout$predict.class <- predict(ptree, EMP.ATT.holdout, type="class")
+EMP.ATT.holdout$predict.score <- predict(ptree, EMP.ATT.holdout, type="prob")
+
+
+EMP.ATT.holdout$deciles <- decile(EMP.ATT.holdout$predict.score[,2])
+
+```
+
+Using Rank Order 
+```{r}
+tmp_DT = data.table(EMP.ATT.holdout)
+h_rank <- tmp_DT[, list(
+  cnt = length(Attrition), 
+  cnt_resp = sum(Attrition), 
+  cnt_non_resp = sum(Attrition == 0)) , 
+  by=deciles][order(-deciles)]
+h_rank$rrate <- round(h_rank$cnt_resp / h_rank$cnt,4);
+h_rank$cum_resp <- cumsum(h_rank$cnt_resp)
+h_rank$cum_non_resp <- cumsum(h_rank$cnt_non_resp)
+h_rank$cum_rel_resp <- round(h_rank$cum_resp / sum(h_rank$cnt_resp),4);
+h_rank$cum_rel_non_resp <- round(h_rank$cum_non_resp / sum(h_rank$cnt_non_resp),4);
+h_rank$ks <- abs(h_rank$cum_rel_resp - h_rank$cum_rel_non_resp)*100;
+h_rank$rrate <- percent(h_rank$rrate)
+h_rank$cum_rel_resp <- percent(h_rank$cum_rel_resp)
+h_rank$cum_rel_non_resp <- percent(h_rank$cum_rel_non_resp)
+
+head(h_rank)
+```
+
+Using ML Metrics, to see the AUC, KS_Stat, Gini Scores and building the Confusion Matrix 
+
+
+```{r}
+
+MLmetrics::AUC(EMP.ATT.holdout$predict.score[,2], EMP.ATT.holdout$Attrition)
+MLmetrics::KS_Stat(EMP.ATT.holdout$predict.score[,2], EMP.ATT.holdout$Attrition)
+MLmetrics::Gini(EMP.ATT.holdout$predict.score[,2], EMP.ATT.holdout$Attrition)
+
+ConfusionMatrix(EMP.ATT.holdout$predict.class, EMP.ATT.holdout$Attrition)
+```
+
+
+###  Building a Neural Network Model 
+
+We now build a Neural Network model using the same dataset as the CART model. 
+
+Data loading and creating Training and Holdout samples
+```{r}
+set.seed(55)
+EMP.ATT <- read.csv("HR_Employee_Attrition_Data.csv", header=T)
+EMP.ATT <- EMP.ATT[,c(-9,-10,-22,-27)]
+EMP.ATT$Attrition<-ifelse(EMP.ATT$Attrition=='Yes', 1,0)
+summary(EMP.ATT)
+nrow(EMP.ATT)
+ncol(EMP.ATT)
+head(EMP.ATT)
+EMP.ATT$random <-runif(nrow (EMP.ATT), 0, 1);
+EMP.ATT.dev<- EMP.ATT[which(EMP.ATT$random <= 0.7),]
+EMP.ATT.holdout<-EMP.ATT [which(EMP.ATT$random > 0.7),]
+c(nrow(EMP.ATT.dev), nrow(EMP.ATT.holdout))
+EMP.ATT.dev = EMP.ATT.dev[-32]
+EMP.ATT.holdout = EMP.ATT.holdout[-32]
+```
+
+We need to convert all categorical variables to numerical variables. 
+
+```{r}
+Trav.matrix <- model.matrix(~ BusinessTravel - 1, data = EMP.ATT.dev)
+EMP.ATT.dev <- data.frame(EMP.ATT.dev, Trav.matrix)
+
+Dpt.matrix <- model.matrix(~ Department - 1, data = EMP.ATT.dev)
+EMP.ATT.dev <- data.frame(EMP.ATT.dev, Dpt.matrix)
+
+Edu.matrix <- model.matrix(~ EducationField - 1, data = EMP.ATT.dev)
+EMP.ATT.dev <- data.frame(EMP.ATT.dev, Edu.matrix)
+
+Gender.matrix <- model.matrix(~ Gender - 1, data = EMP.ATT.dev)
+EMP.ATT.dev <- data.frame(EMP.ATT.dev, Gender.matrix)
+
+Role.matrix <- model.matrix(~ JobRole - 1, data = EMP.ATT.dev)
+EMP.ATT.dev <- data.frame(EMP.ATT.dev, Role.matrix)
+
+Marr.matrix <- model.matrix(~ MaritalStatus - 1, data = EMP.ATT.dev)
+EMP.ATT.dev <- data.frame(EMP.ATT.dev, Marr.matrix)
+
+OT.matrix <- model.matrix(~ OverTime - 1, data = EMP.ATT.dev)
+EMP.ATT.dev <- data.frame(EMP.ATT.dev, OT.matrix)
+
+Trav.matrix <- model.matrix(~ BusinessTravel - 1, data = EMP.ATT.holdout)
+EMP.ATT.holdout <- data.frame(EMP.ATT.holdout, Trav.matrix)
+
+Dpt.matrix <- model.matrix(~ Department - 1, data = EMP.ATT.holdout)
+EMP.ATT.holdout <- data.frame(EMP.ATT.holdout, Dpt.matrix)
+
+Edu.matrix <- model.matrix(~ EducationField - 1, data = EMP.ATT.holdout)
+EMP.ATT.holdout <- data.frame(EMP.ATT.holdout, Edu.matrix)
+
+Gender.matrix <- model.matrix(~ Gender - 1, data = EMP.ATT.holdout)
+EMP.ATT.holdout <- data.frame(EMP.ATT.holdout, Gender.matrix)
+
+Role.matrix <- model.matrix(~ JobRole - 1, data = EMP.ATT.holdout)
+EMP.ATT.holdout <- data.frame(EMP.ATT.holdout, Role.matrix)
+
+Marr.matrix <- model.matrix(~ MaritalStatus - 1, data = EMP.ATT.holdout)
+EMP.ATT.holdout <- data.frame(EMP.ATT.holdout, Marr.matrix)
+
+OT.matrix <- model.matrix(~ OverTime - 1, data = EMP.ATT.holdout)
+EMP.ATT.holdout <- data.frame(EMP.ATT.holdout, OT.matrix)
+
+colnames(EMP.ATT.dev)
+colnames(EMP.ATT.holdout)
+
+c(nrow(EMP.ATT.dev), nrow(EMP.ATT.holdout))
+```
+
+We check the response rate in Training and Holdout Samples
+
+```{r}
+sum(EMP.ATT.dev$Attrition) / nrow(EMP.ATT.dev)
+sum(EMP.ATT.holdout$Attrition) / nrow(EMP.ATT.holdout)
+```
+
+Now, to build a Neural Net model, we need to scale the variables. 
+
+Scaling the training data
+```{r}
+x <- subset(EMP.ATT.dev, 
+            select = c("Age", "DailyRate", "DistanceFromHome", "EnvironmentSatisfaction",
+                       "HourlyRate", "JobInvolvement", "JobLevel", "JobSatisfaction", "MonthlyIncome",
+                       "MonthlyRate", "NumCompaniesWorked", "PercentSalaryHike", "PerformanceRating", 
+                       "RelationshipSatisfaction", "StockOptionLevel", "TotalWorkingYears", "TrainingTimesLastYear", 
+                       "WorkLifeBalance", "YearsAtCompany", "YearsInCurrentRole", "YearsSinceLastPromotion",
+                       "YearsWithCurrManager", "BusinessTravelNon.Travel", "BusinessTravelTravel_Frequently",
+                       "BusinessTravelTravel_Rarely", "DepartmentHuman.Resources", "DepartmentResearch...Development",
+                       "DepartmentSales", "EducationFieldHuman.Resources", "EducationFieldLife.Sciences",
+                       "EducationFieldMarketing", "EducationFieldMedical", "EducationFieldOther", 
+                       "EducationFieldTechnical.Degree", "GenderFemale", "GenderMale",
+                       "JobRoleHealthcare.Representative", "JobRoleHuman.Resources", "JobRoleLaboratory.Technician",
+                       "JobRoleManager", "JobRoleManufacturing.Director", "JobRoleResearch.Director",
+                       "JobRoleResearch.Scientist", "JobRoleSales.Executive", "JobRoleSales.Representative",
+                       "MaritalStatusDivorced", "MaritalStatusMarried", "MaritalStatusSingle", "OverTimeNo", "OverTimeYes"
+                      )
+            )
+
+
+EMP.ATT.devscaled <- scale(x)
+EMP.ATT.devscaled <- cbind(EMP.ATT.dev[2], EMP.ATT.devscaled)
+
+```
+
+Scaling the Hold out data
+```{r}
+y <- subset(EMP.ATT.holdout, 
+            select = c("Age", "DailyRate", "DistanceFromHome", "EnvironmentSatisfaction",
+                       "HourlyRate", "JobInvolvement", "JobLevel", "JobSatisfaction", "MonthlyIncome",
+                       "MonthlyRate", "NumCompaniesWorked", "PercentSalaryHike", "PerformanceRating", 
+                       "RelationshipSatisfaction", "StockOptionLevel", "TotalWorkingYears", "TrainingTimesLastYear", 
+                       "WorkLifeBalance", "YearsAtCompany", "YearsInCurrentRole", "YearsSinceLastPromotion",
+                       "YearsWithCurrManager", "BusinessTravelNon.Travel", "BusinessTravelTravel_Frequently",
+                       "BusinessTravelTravel_Rarely", "DepartmentHuman.Resources", "DepartmentResearch...Development",
+                       "DepartmentSales", "EducationFieldHuman.Resources", "EducationFieldLife.Sciences",
+                       "EducationFieldMarketing", "EducationFieldMedical", "EducationFieldOther", 
+                       "EducationFieldTechnical.Degree", "GenderFemale", "GenderMale",
+                       "JobRoleHealthcare.Representative", "JobRoleHuman.Resources", "JobRoleLaboratory.Technician",
+                       "JobRoleManager", "JobRoleManufacturing.Director", "JobRoleResearch.Director",
+                       "JobRoleResearch.Scientist", "JobRoleSales.Executive", "JobRoleSales.Representative",
+                       "MaritalStatusDivorced", "MaritalStatusMarried", "MaritalStatusSingle", "OverTimeNo", "OverTimeYes"
+                      )
+            )
+
+
+EMP.ATT.holdscaled <- scale(y)
+EMP.ATT.holdscaled <- cbind(EMP.ATT.holdout[2], EMP.ATT.holdscaled)
+
+```
+
+###  Computing the NN Model
+
+```{r}
+library(neuralnet)
+set.seed(111)
+
+Model.NN <- neuralnet(formula = Attrition ~  Age + DailyRate + DistanceFromHome + EnvironmentSatisfaction 
+                      + HourlyRate + JobInvolvement + JobLevel + JobSatisfaction + MonthlyIncome + MonthlyRate + 
+                      NumCompaniesWorked + PercentSalaryHike + PerformanceRating + RelationshipSatisfaction + StockOptionLevel +
+                      TotalWorkingYears + TrainingTimesLastYear + WorkLifeBalance + YearsAtCompany + YearsInCurrentRole + 
+                      YearsSinceLastPromotion + YearsWithCurrManager + BusinessTravelNon.Travel + BusinessTravelTravel_Frequently + 
+                      BusinessTravelTravel_Rarely + DepartmentHuman.Resources + DepartmentResearch...Development + DepartmentSales + 
+                      EducationFieldHuman.Resources + EducationFieldLife.Sciences + EducationFieldMarketing + EducationFieldMedical + 
+                      EducationFieldOther + EducationFieldTechnical.Degree + GenderFemale + GenderMale + JobRoleHealthcare.Representative + 
+                      JobRoleHuman.Resources + JobRoleLaboratory.Technician + JobRoleManager + JobRoleManufacturing.Director +
+                      JobRoleResearch.Director + JobRoleResearch.Scientist + JobRoleSales.Executive + JobRoleSales.Representative + 
+                      MaritalStatusDivorced + MaritalStatusMarried + MaritalStatusSingle + OverTimeNo + OverTimeYes,
+                    data = EMP.ATT.devscaled, 
+                    hidden = c(5),
+                    err.fct = "sse",
+                    linear.output = FALSE,
+                    lifesign = "minimal",
+                    lifesign.step = 1000,
+                    threshold = 0.01,
+                    stepmax = 4000,
+                 #startweights = weights1
+)
+
+```
+
+###  Plotting the NN model created
+
+```{r}
+plot(Model.NN)
+```
+
+Now, assigning the Probabilities to Training Sample
+```{r}
+
+EMP.ATT.dev$Prob = Model.NN$net.result[[1]] 
+```
+
+The distribution of the estimated probabilities
+
+```{r}
+
+quantile(EMP.ATT.dev$Prob, c(0,1,5,10,25,50,75,85,90,95,99,100)/100)
+```
+
+Using MLMetrics checking the AUC, KS-Stat and Gini Score.
+```{r}
+library(MLmetrics)
+MLmetrics::AUC(EMP.ATT.dev$Prob, EMP.ATT.dev$Attrition)
+MLmetrics::KS_Stat(EMP.ATT.dev$Prob, EMP.ATT.dev$Attrition)
+MLmetrics::Gini(EMP.ATT.dev$Prob, EMP.ATT.dev$Attrition)
+```
+
+Assgining 0 / 1 class based on certain threshold
+```{r}
+EMP.ATT.dev$Class = ifelse(EMP.ATT.dev$Prob>0.22,1,0)
+```
+
+Creating the Confusion Matrix
+```{r}
+ConfusionMatrix(EMP.ATT.dev$Class ,EMP.ATT.dev$Attrition)
+```
+
+Now, we are check the model on the holdout data using compute method
+
+```{r}
+
+ypred3<- compute(Model.NN,EMP.ATT.holdscaled)$net.result
+EMP.ATT.holdout$Prob = ypred3
+```
+
+The distribution of the estimated probabilities
+
+```{r}
+quantile(EMP.ATT.holdout$Prob, c(0,1,5,10,25,50,75,85,90,95,99,100)/100)
+```
+
+Using MLMetrics checking the AUC, KS-Stat and Gini Score.
+
+```{r}
+MLmetrics::AUC(EMP.ATT.holdout$Prob, EMP.ATT.holdout$Attrition)
+MLmetrics::KS_Stat(EMP.ATT.holdout$Prob, EMP.ATT.holdout$Attrition)
+MLmetrics::Gini(EMP.ATT.holdout$Prob, EMP.ATT.holdout$Attrition)
+```
+
+Assgining 0 / 1 class based on certain threshold
+```{r}
+EMP.ATT.holdout$Class = ifelse(EMP.ATT.holdout$Prob>0.22,1,0)
+```
+
+Creating the Confusion Matrix
+```{r}
+ConfusionMatrix(EMP.ATT.holdout$Class ,EMP.ATT.holdout$Attrition)
+```
+
+### Summary 
+
+On Comparing the CART model with Neural Net model, we find that using the CART model, we can achieve an accuracy of around 85% while using the Neural Net, the accuracy increases to around 90%.
+
+
+
