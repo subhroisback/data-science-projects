@@ -14,7 +14,7 @@ Skills and Tools: **R, Factor Analysis, Advanced Statistics, Analytics**
 Description: K-Means Clustering algorithm was applied to the Aggregated Survey Data from 26 Engineering colleges. A classification model was built to classify Engineering colleges into different groups based upon multiple relevant parameters. </br>
 Skills and Tools: **R, Cluster Analysis, Data Mining, K Means Clustering**
 
-## Project 4 : [Neural Network model on Employee Attrition]()
+## Project 4 : [Neural Network model on Employee Attrition](http://htmlpreview.github.io/?https://github.com/subhroisback/data-science-projects/blob/master/Prj_4-NeuralNetwork_CART.nb.html)
 Description: The project investigates the factors that cause employee attrition in organizations. An employee attrition model was built using moderate neural network model and random forest. After generating common performance parameters for both the models, an ensemble model was created that identified the cause of employee attrition.</br>
 Skills and Tools: **R, Neural Networks, Data Mining, CART**
 
